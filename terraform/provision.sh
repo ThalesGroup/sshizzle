@@ -10,8 +10,8 @@ set -euo pipefail
 # that are used for deploying Linux servers
 
 # Get the latest version number for sshizzle from Github
-REPO="thalesgroup/sshizzle"
-VERSION=$(wget -qO- "https://github.com/${REPO}/releases" | grep -m1 -Po "/${REPO}/releases/tag/\K[0-9]+\.[0-9]+\.[0-9]+")
+REPO="ThalesGroup/sshizzle"
+VERSION=$(wget -qO- "https://github.com/${REPO}/releases" | grep -Po "/${REPO}/releases/tag/\K[0-9]+\.[0-9]+\.[0-9]+")
 
 # Download the latest sshizzle-host binary
 mkdir -p /usr/local/bin
