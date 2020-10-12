@@ -9,7 +9,7 @@
 
 ## Introduction
 
-Full introduction available [on our blog](#)!
+Full introduction available [on LinkedIn](https://www.linkedin.com/pulse/zero-trust-ssh-microsoft-azure-jon-seager)!
 
 SSHizzle is the combination of a serverless SSH Certificate Authority and a replacement SSH agent designed to simplify the management of SSH users and authentication both for administrators and users on Microsoft Azure. SSHizzle was inspired by the work of Jeremy Stott ([@stoggi](https://github.com/stoggi)) and the [sshrimp](https://github.com/stoggi/sshrimp) project which implements a similar solution for AWS.
 
