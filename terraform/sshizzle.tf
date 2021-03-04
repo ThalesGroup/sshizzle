@@ -1,3 +1,8 @@
+locals {
+  // Generate name in advance to avoid cyclic dependency
+  keyvault_name = "${var.prefix}-kv-sshizzle"
+}
+
 // Create a resource group
 resource "azurerm_resource_group" "rg-sshizzle" {
   name     = "rg-sshizzle"
@@ -6,7 +11,7 @@ resource "azurerm_resource_group" "rg-sshizzle" {
 
 // Create the Key Vault
 resource "azurerm_key_vault" "kv-sshizzle" {
-  name                     = "kv-sshizzle"
+  name                     = local.keyvault_name
   location                 = azurerm_resource_group.rg-sshizzle.location
   resource_group_name      = azurerm_resource_group.rg-sshizzle.name
   tenant_id                = data.azurerm_client_config.current.tenant_id
@@ -51,7 +56,7 @@ resource "azurerm_key_vault_key" "key-sshizzle" {
 
 // Create a storage account to back the App Service Plan
 resource "azurerm_storage_account" "sasshizzle" {
-  name                     = "sasshizzle"
+  name                     = "${var.prefix}sasshizzle"
   resource_group_name      = azurerm_resource_group.rg-sshizzle.name
   location                 = azurerm_resource_group.rg-sshizzle.location
   account_tier             = "Standard"
@@ -81,7 +86,7 @@ resource "azuread_application" "app-sshizzle-agent" {
   name                       = "app-sshizzle-agent"
   available_to_other_tenants = false
   type                       = "native"
-  owners                     = ["${data.azurerm_client_config.current.object_id}"]
+  owners                     = [data.azurerm_client_config.current.object_id]
   reply_urls                 = ["http://localhost:8080/callback"]
   // Give application access to the Graph API and allow users to Sign In
   required_resource_access {
@@ -96,7 +101,7 @@ resource "azuread_application" "app-sshizzle-agent" {
 // Create an app registration for the CA
 resource "azuread_application" "app-sshizzle-ca" {
   name                       = "app-sshizzle-ca"
-  owners                     = ["${data.azurerm_client_config.current.object_id}"]
+  owners                     = [data.azurerm_client_config.current.object_id]
   homepage                   = "https://func-sshizzle-${lower(random_id.function-id.b64_url)}.azurewebsites.net"
   identifier_uris            = ["https://func-sshizzle-${lower(random_id.function-id.b64_url)}.azurewebsites.net"]
   reply_urls                 = ["https://func-sshizzle-${lower(random_id.function-id.b64_url)}.azurewebsites.net/.auth/login/aad/callback"]
@@ -161,6 +166,10 @@ resource "azurerm_function_app" "func-sshizzle" {
       client_secret     = azuread_application_password.apppw-sshizzle-ca.id
       allowed_audiences = ["https://func-sshizzle-${lower(random_id.function-id.b64_url)}.azurewebsites.net"]
     }
+  }
+
+  app_settings = {
+    KV_NAME = local.keyvault_name
   }
 
   identity {

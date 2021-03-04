@@ -69,7 +69,8 @@ func httpTriggerHandler(w http.ResponseWriter, r *http.Request) {
 	kvClient.Authorizer = authorizer
 
 	// Go and sign our public key!
-	signed, err := signer.SignCertificate(&invocationDetail, &kvClient, "kv-sshizzle", "sshizzle", publicKey)
+	keyvaultName := os.Getenv("KV_NAME")
+	signed, err := signer.SignCertificate(&invocationDetail, &kvClient, keyvaultName, "sshizzle", publicKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
