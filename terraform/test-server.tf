@@ -94,7 +94,14 @@ resource "azurerm_key_vault_access_policy" "kvap-sshizzle-test-server" {
 // Generate a random password for the VM
 resource "random_password" "vm-password" {
   length           = 20
+  lower            = true
+  min_lower        = 1
+  upper            = true
+  min_upper        = 1
+  number           = true
+  min_numeric      = 1
   special          = true
+  min_special      = 1
   override_special = "_%@"
 }
 
