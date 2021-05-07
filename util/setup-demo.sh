@@ -4,9 +4,9 @@ set -euo pipefail
 SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 PROJECT_ROOT=$( cd "$( dirname "${SCRIPT_DIR[0]}" )" && pwd )
 
-if ! command -v jq >/dev/null || 
-   ! command -v az >/dev/null || 
-   ! command -v terraform >/dev/null || 
+if ! command -v jq >/dev/null ||
+   ! command -v az >/dev/null ||
+   ! command -v terraform >/dev/null ||
    ! command -v zip >/dev/null ||
    ! command -v go >/dev/null; then
   echo "You must have jq, zip, terraform, az and go installed and in your PATH" >&2
@@ -14,17 +14,21 @@ if ! command -v jq >/dev/null ||
 fi
 
 if [[ ! -f "${PROJECT_ROOT}/terraform/terraform.tfvars" ]]; then
+  read -r -p "Enter project location: " LOCATION
+  echo "location = \"${LOCATION}\"" > "${PROJECT_ROOT}/terraform/terraform.tfvars"
   read -r -p "Enter the email address you use to login into Azure. (e.g joe.bloggs@gmail.com): " EMAIL
-  echo "login_email = \"${EMAIL}\"" > "${PROJECT_ROOT}/terraform/terraform.tfvars"
+  echo "login_email = \"${EMAIL}\"" >> "${PROJECT_ROOT}/terraform/terraform.tfvars"
+  read -r -p "Enter project prefix: " PREFIX
+  echo "prefix = \"${PREFIX}\"" >> "${PROJECT_ROOT}/terraform/terraform.tfvars"
 fi
+
+# Build all the things
+"${SCRIPT_DIR}/build-all.sh"
 
 # Deploy Azure resources
 cd "${PROJECT_ROOT}/terraform" || exit 1
 terraform init
 terraform apply -auto-approve
-
-# Build all the things
-"${SCRIPT_DIR}/build-all.sh"
 
 # Create deployment folder
 mkdir -p "${SCRIPT_DIR}/build/bin"
@@ -54,7 +58,7 @@ FUNC_NAME=$(echo "${AZ_FUNC_HOST}" | cut -d"." -f1)
 az functionapp deployment source config-zip -g rg-sshizzle -n "${FUNC_NAME}" --src "${PROJECT_ROOT}/bin/func-sshizzle.zip"
 
 # Create a dotenv file for the agent
-cat <<-EOF > "${PROJECT_ROOT}/.env" 
+cat <<-EOF > "${PROJECT_ROOT}/.env"
 AZ_TENANT_ID="${AZ_TENANT_ID}"
 AZ_CLIENT_ID="${AZ_CLIENT_ID}"
 AZ_FUNC_HOST="${AZ_FUNC_HOST}"

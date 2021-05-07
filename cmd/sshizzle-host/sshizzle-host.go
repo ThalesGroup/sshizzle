@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -21,6 +22,14 @@ import (
 var kvResource string = strings.Trim(azure.PublicCloud.KeyVaultEndpoint, "/")
 
 func main() {
+	var keyvaultName string
+	flag.StringVar(&keyvaultName, "kvName", "kv-sshizzle", "specify the keyvault name")
+	flag.Parse()
+
+	if os.Getenv("KV_NAME") != "" {
+		keyvaultName = os.Getenv("KV_NAME")
+	}
+
 	// Setup an authoriser for KeyVault resources using the users credentials from
 	// the Azure CLI
 	var authorizer autorest.Authorizer
@@ -42,7 +51,7 @@ func main() {
 	kvClient := keyvault.New()
 	kvClient.Authorizer = authorizer
 	// Create a KeyVault Signer
-	kvSigner := az.NewKeyVaultSigner(&kvClient, "kv-sshizzle", "sshizzle")
+	kvSigner := az.NewKeyVaultSigner(&kvClient, keyvaultName, "sshizzle")
 	// Get the crypto.PublicKey back from the Signer
 	publicKey := kvSigner.Public()
 	// Convert to an SSH public key

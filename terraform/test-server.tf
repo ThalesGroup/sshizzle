@@ -20,7 +20,7 @@ resource "azurerm_subnet" "snet-sshizzle" {
   address_prefixes     = ["10.200.200.0/24"]
   service_endpoints    = ["Microsoft.KeyVault"]
 
-  // This is a hack because you cannot current add Key Vault network_acl seperately from the Key Vault definition: 
+  // This is a hack because you cannot current add Key Vault network_acl seperately from the Key Vault definition:
   // https://github.com/terraform-providers/terraform-provider-azurerm/issues/3130
   provisioner "local-exec" {
     command = "az keyvault network-rule add --name ${azurerm_key_vault.kv-sshizzle.name} --subnet ${azurerm_subnet.snet-sshizzle.id}"
@@ -76,26 +76,28 @@ resource "azurerm_network_interface_security_group_association" "nsga-sshizzle" 
   network_security_group_id = azurerm_network_security_group.nsg-sshizzle.id
 }
 
-// Create a User Assigned Managed Identity for the VM
-resource "azurerm_user_assigned_identity" "mid-sshizzle-test-server" {
-  resource_group_name = azurerm_resource_group.rg-sshizzle-test-server.name
-  location            = azurerm_resource_group.rg-sshizzle-test-server.location
-  name                = "sshizzle-test-server"
-}
-
-// Allow the MSI for the test server to get a key (to fetch the public part)
-resource "azurerm_key_vault_access_policy" "kvap-sshizzle-test-server" {
-  key_vault_id    = azurerm_key_vault.kv-sshizzle.id
-  tenant_id       = data.azurerm_client_config.current.tenant_id
-  object_id       = azurerm_user_assigned_identity.mid-sshizzle-test-server.principal_id
-  key_permissions = ["get"]
-}
-
 // Generate a random password for the VM
 resource "random_password" "vm-password" {
   length           = 20
   special          = true
   override_special = "_%@"
+}
+
+// Retrieve ssh CertificateAuthority from Azure Key Vault
+data "external" "ssh_ca" {
+  program = ["../bin/sshizzle-convert"]
+  query = {
+    E = azurerm_key_vault_key.key-sshizzle.e
+    N = azurerm_key_vault_key.key-sshizzle.n
+  }
+}
+
+// Render provision script with embedded CertificateAuthority
+data "template_file" "provision" {
+  template = file("${path.module}/provision.sh.tpl")
+  vars = {
+    ca_certificate = base64encode(data.external.ssh_ca.result.ca)
+  }
 }
 
 // Create the VM
@@ -125,20 +127,11 @@ resource "azurerm_virtual_machine" "vm-sshizzle-test-server" {
     computer_name  = "sshizzle-test-server"
     admin_username = split("@", var.login_email)[0]
     admin_password = random_password.vm-password.result
-    custom_data    = file("./provision.sh")
+    custom_data    = data.template_file.provision.rendered
   }
   os_profile_linux_config {
     disable_password_authentication = false
   }
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.mid-sshizzle-test-server.id]
-  }
-
-  // Only a dependency is this test case because the provisioner script
-  // queries the key vault key to populate the sshd config
-  // Wouldn't be required when baking images
-  depends_on = [azurerm_key_vault.kv-sshizzle, azurerm_key_vault_key.key-sshizzle, azurerm_key_vault_access_policy.kvap-sshizzle-test-server]
 }
 
 

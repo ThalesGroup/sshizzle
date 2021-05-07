@@ -7,3 +7,8 @@ variable "location" {
   type        = string
   description = "Azure Region to deploy to (e.g. uksouth)"
 }
+
+variable "prefix" {
+  type         = string
+  description  = "Azure name prefix"
+}
