@@ -5,16 +5,19 @@ import (
 	"context"
 	"crypto"
 	"crypto/rsa"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"math/big"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/v7.0/keyvault"
 	"github.com/pkg/errors"
 )
+
+// Timeout for all calls to Azure Key Vault
+const KeyVaultRequestTimeout = 20 * time.Second
 
 // KeyVaultSigner an Azure Key Vault signer
 type KeyVaultSigner struct {
@@ -39,7 +42,9 @@ func NewKeyVaultSigner(client *keyvault.BaseClient, keyVaultName string, key str
 // Public returns the PublicKey from an Azure Key Vault Key
 func (s *KeyVaultSigner) Public() crypto.PublicKey {
 	// Get the key from Azure Key Vault
-	keyBundle, err := s.client.GetKey(context.Background(), s.url, s.key, "")
+	ctx, cancel := context.WithTimeout(context.Background(), KeyVaultRequestTimeout)
+	keyBundle, err := s.client.GetKey(ctx, s.url, s.key, "")
+	cancel()
 	if err != nil {
 		return nil
 	}
@@ -78,15 +83,7 @@ func (s *KeyVaultSigner) Public() crypto.PublicKey {
 	}
 
 	// Create a new PublicKey using our computed values
-	key := rsa.PublicKey{N: n, E: int(e)}
-
-	// Convert into the rigth format
-	publicKey, err := x509.ParsePKCS1PublicKey(x509.MarshalPKCS1PublicKey(&key))
-	if err != nil {
-		return nil
-	}
-
-	return publicKey
+	return &rsa.PublicKey{N: n, E: int(e)}
 }
 
 // Sign a digest with the private key in Azure Key Vault
@@ -95,8 +92,9 @@ func (s *KeyVaultSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerO
 	encodedDigest := base64.RawURLEncoding.EncodeToString(digest)
 
 	// Attempt to sign using the KeyVault client
+	ctx, cancel := context.WithTimeout(context.Background(), KeyVaultRequestTimeout)
 	response, err := s.client.Sign(
-		context.Background(),
+		ctx,
 		s.url,
 		s.key,
 		"",
@@ -105,6 +103,10 @@ func (s *KeyVaultSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerO
 			Value:     &encodedDigest,
 		},
 	)
+	cancel()
+	if err != nil {
+		return nil, err
+	}
 
 	// Parse the result, decoding from base64
 	signature, err := base64.RawURLEncoding.DecodeString(*response.Result)
