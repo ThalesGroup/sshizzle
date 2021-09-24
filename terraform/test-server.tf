@@ -79,7 +79,14 @@ resource "azurerm_network_interface_security_group_association" "nsga-sshizzle" 
 // Generate a random password for the VM
 resource "random_password" "vm-password" {
   length           = 20
+  lower            = true
+  min_lower        = 1
+  upper            = true
+  min_upper        = 1
+  number           = true
+  min_numeric      = 1
   special          = true
+  min_special      = 1
   override_special = "_%@"
 }
 
