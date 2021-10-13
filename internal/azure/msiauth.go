@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Azure/go-autorest/autorest/adal"
 )
@@ -46,7 +47,9 @@ func GetServicePrincipalTokenFromMSI(endpoint string) (*adal.ServicePrincipalTok
 	url := fmt.Sprintf("%s?resource=%s&api-version=%s", idEndpoint, endpoint, apiVersion)
 
 	// Create an HTTP client and set appropriate headers for token request
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 20 * time.Second,
+	}
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("X-IDENTITY-HEADER", idHeader)
 

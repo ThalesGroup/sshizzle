@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"crypto/rsa"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -59,16 +58,10 @@ func main() {
 	}
 
 	// Create a new PublicKey using our computed values
-	key := rsa.PublicKey{N: n, E: int(e)}
-
-	// Convert into the rigth format
-	publicKey, err := x509.ParsePKCS1PublicKey(x509.MarshalPKCS1PublicKey(&key))
-	if err != nil {
-		log.Fatal(err)
-	}
+	key := &rsa.PublicKey{N: n, E: int(e)}
 
 	// Create ssh public key from PKCS1 public key
-	sshKey, err := ssh.NewPublicKey(publicKey)
+	sshKey, err := ssh.NewPublicKey(key)
 	if err != nil {
 		log.Fatal(err)
 	}
