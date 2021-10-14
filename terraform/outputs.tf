@@ -25,5 +25,6 @@ output "admin-user" {
 
 output "vm-user-password" {
   value = random_password.vm-password.result
+  sensitive = true
 }
 

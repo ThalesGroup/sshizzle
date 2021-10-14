@@ -8,3 +8,4 @@ local.settings.json
 *.env
 *.tfstate*
 *.tfvars
+.terraform.lock.hcl
