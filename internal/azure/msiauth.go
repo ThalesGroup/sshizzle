@@ -1,6 +1,7 @@
 package azure
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -24,7 +25,7 @@ type MSIResourceToken struct {
 
 // GetServicePrincipalTokenFromMSI gets a standard Service Principal Token from a Managed Service Identity that's
 // assigned to an Azure Function.
-func GetServicePrincipalTokenFromMSI(endpoint string) (*adal.ServicePrincipalToken, error) {
+func GetServicePrincipalTokenFromMSI(ctx context.Context, endpoint string) (*adal.ServicePrincipalToken, error) {
 	// Retreive the MSI endpoint for the Azure Function
 	// Azure Go SDK method for creating Authorizers from MSI doesn't work in functions
 	// https://docs.microsoft.com/en-us/azure/app-service/overview-managed-identity?tabs=javascript
@@ -48,9 +49,9 @@ func GetServicePrincipalTokenFromMSI(endpoint string) (*adal.ServicePrincipalTok
 
 	// Create an HTTP client and set appropriate headers for token request
 	client := &http.Client{
-		Timeout: 20 * time.Second,
+		Timeout: 10 * time.Second,
 	}
-	req, _ := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("X-IDENTITY-HEADER", idHeader)
 
 	// Make the request for a token
