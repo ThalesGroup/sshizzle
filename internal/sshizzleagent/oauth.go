@@ -50,12 +50,7 @@ func Authenticate(token *oauth2.Token, config *oauth2.Config) (*oauth2.Token, er
 
 		// Catch interrupt/kill signals to exit nicely
 		sigs := make(chan os.Signal)
-		exit := make(chan os.Signal)
 		signal.Notify(sigs, os.Interrupt, os.Kill)
-		go func() {
-			s := <-sigs
-			exit <- s
-		}()
 
 		// Take the current time
 		now := time.Now()
@@ -67,8 +62,8 @@ func Authenticate(token *oauth2.Token, config *oauth2.Config) (*oauth2.Token, er
 			}
 			// Check for user input/interrupt
 			select {
-			case e := <-exit:
-				return nil, fmt.Errorf("Cancelled, signal received: %s", e.String())
+			case s := <-sigs:
+				return nil, fmt.Errorf("Cancelled, signal received: %s", s.String())
 			default:
 				time.Sleep(time.Second * 1)
 			}
