@@ -12,3 +12,9 @@ variable "prefix" {
   type         = string
   description  = "Azure name prefix"
 }
+
+variable "ca_key_size" {
+  type        = number
+  description = "Size in bits of the RSA CA key (2048, 3072, or 4096)"
+  default     = 4096
+}

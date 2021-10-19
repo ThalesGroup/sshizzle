@@ -45,12 +45,12 @@ resource "azurerm_key_vault" "kv-sshizzle" {
   }
 }
 
-// Create the CA key - an Azure generated 2048 bit RSA key
+// Create the CA key - an Azure generated RSA key
 resource "azurerm_key_vault_key" "key-sshizzle" {
   name         = "sshizzle"
   key_vault_id = azurerm_key_vault.kv-sshizzle.id
   key_type     = "RSA"
-  key_size     = 2048
+  key_size     = "${var.ca_key_size}"
   key_opts     = ["sign", "verify"]
 }
 
